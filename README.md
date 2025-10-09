@@ -137,13 +137,13 @@ sequenceDiagram
 ## REQUISITOS TÉCNICOS
 
 - ESP32 DevKit
-  <img width="320" height="320" alt="image" src="https://github.com/user-attachments/assets/1b4f463e-2e54-4bc3-b259-d99885b0cd25" />
+  - <img width="320" height="320" alt="image" src="https://github.com/user-attachments/assets/1b4f463e-2e54-4bc3-b259-d99885b0cd25" />
 
 - Broker MQTT (Mosquitto)
-   <img width="320" height="320" alt="image" src="https://github.com/user-attachments/assets/d4557ef1-2363-411c-acaf-b2ab4d33b1f7" />
+   - <img width="320" height="320" alt="image" src="https://github.com/user-attachments/assets/d4557ef1-2363-411c-acaf-b2ab4d33b1f7" />
 - Red Wi-Fi local
 - Arduino IDE con librerías:
-  <img width="320" height="320" alt="image" src="https://github.com/user-attachments/assets/d80a650e-ca84-48e8-ad9a-73ba780dfc9e" />
+  - <img width="320" height="320" alt="image" src="https://github.com/user-attachments/assets/d80a650e-ca84-48e8-ad9a-73ba780dfc9e" />
     - WiFi.h
     - WebServer.h
     - PubSubClient.h
