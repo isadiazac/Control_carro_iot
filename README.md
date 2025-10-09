@@ -131,7 +131,7 @@ sequenceDiagram
     Client->>ESP32: POST /move (dir, speed, duration_ms)
     ESP32->>MQTT_Broker: Publica comando en tema esp32car/http
     ESP32-->>Client: Responde JSON {"ok": true, "dir": "A", ...}
-    MQTT_Broker->>Suscriptores: Envía actualización del tema esp32car/htt
+    MQTT_Broker->>Suscriptores: Envía actualización del tema esp32car/http
 ```
 ------------------------------------------------------------
 ## REQUISITOS TÉCNICOS
