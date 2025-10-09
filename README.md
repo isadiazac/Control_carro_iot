@@ -144,6 +144,7 @@ sequenceDiagram
 - Red Wi-Fi local
 - Arduino IDE con librerías:
   - <img width="320" height="320" alt="image" src="https://github.com/user-attachments/assets/d80a650e-ca84-48e8-ad9a-73ba780dfc9e" />
+  
     - WiFi.h
     - WebServer.h
     - PubSubClient.h
