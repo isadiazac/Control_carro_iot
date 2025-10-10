@@ -110,7 +110,7 @@ Broker MQTT:
 ## Postman
 Para realizar las pruebas, se debe poner la ip del ESP32 que aparece en la consola al correr el código.
 Se puede acceder a la colección de postman mediante el siguiente enlace:
-https://isadiac06-8447466.postman.co/workspace/Isabela-D%C3%ADaz-Acosta's-Workspace~9e2b66f0-0753-4365-8205-f3c81aec62b1/request/48860550-62163d56-8bed-43a5-ac9d-7a233ec0c0e6?action=share&creator=48860550
+https://isadiac06-8447466.postman.co/workspace/Isabela-D%C3%ADaz-Acosta's-Workspace~9e2b66f0-0753-4365-8205-f3c81aec62b1/collection/48860550-8b0edd90-5e8c-4ea3-a6af-769d312878a0?action=share&creator=48860550
 
 ------------------------------------------------------------
 
