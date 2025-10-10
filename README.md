@@ -1,4 +1,5 @@
 # ESP32 Car Controller (HTTP + MQTT)
+Gabriela Bejarano, Isabela Diaz, Mauricio Suarez
 
 Este proyecto implementa un sistema de control para un vehículo basado en ESP32, el cual recibe instrucciones de movimiento mediante un endpoint HTTP y las publica en un servidor MQTT.  
 
