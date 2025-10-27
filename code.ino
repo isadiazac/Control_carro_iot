@@ -1,78 +1,38 @@
+// ====== esp32_car.ino ======
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
 #include <PubSubClient.h>
-//#include "driver/ledc.h"  // ❌ Desactivamos PWM por hardware temporalmente
+#include "config.h"
 
-// ========= CONFIG WI-FI =========
-const char* WIFI_SSID = "ASULMOVIS";
-const char* WIFI_PASS = "Asul23alma";
-
-// ========= CONFIG MQTT ==========
-const char* MQTT_BROKER = "192.168.1.101";
-const uint16_t MQTT_PORT = 1883;
-const char* MQTT_CLIENT_ID = "esp32_car";
-const char* MQTT_TOPIC = "esp32car/http";
-
-// ========= PINES MOTORES =========
-const int ENA = 25;
-const int IN1 = 26;
-const int IN2 = 27;
-const int ENB = 33;
-const int IN3 = 32;
-const int IN4 = 14;
-
-// ========= PINES LEDS ===========
-const int LED_IZQ  = 18;
-const int LED_DER  = 23;
-const int LED_STOP = 19;
-const int LED_REV  = 22;
-const int LED_AZULES = 21;
-
-// ========= LED ACTIVO ===========
-const bool LED_ACTIVE_HIGH = true;
-
-// ========= PWM =========
-const int PWM_FREQ_HZ  = 20000;
-const int PWM_RES_BITS = 10;
-const int PWM_MAX      = (1 << PWM_RES_BITS) - 1;
-// const int PWM_CH_A     = 0;
-// const int PWM_CH_B     = 1;
-
-// ========= CONTROL =========
-int velDefault = 800;
-const int STEP = 50;
-char lastMotion = 'S';
-
-// ========= BLINK REVERSA =========
-const unsigned long REV_BLINK_MS = 250;
-unsigned long revLastToggle = 0;
-bool revBlinkState = false;
-
-// ========= AUTOSTOP =========
-unsigned long activeMotionUntil = 0;
-
-// ========= SERVIDORES =========
+// ========= GLOBALS ==========
 WebServer server(80);
 WiFiClient wifiClient;
 PubSubClient mqtt(wifiClient);
 
-// ========= UTILS =========
+// Control
+int velDefault = 800;
+const int STEP = 50;
+char lastMotion = 'S';
+
+// Blink
+unsigned long revLastToggle = 0;
+bool revBlinkState = false;
+
+// Autostop
+unsigned long activeMotionUntil = 0;
+
+// Sensor publish timer
+unsigned long lastSensorPublish = 0;
+
+// Utils
 int clampDuty(int x){ return x<0?0:(x>PWM_MAX?PWM_MAX:x); }
 
-inline void ledWrite(int pin, bool on){
-  digitalWrite(pin, (LED_ACTIVE_HIGH ? (on?HIGH:LOW) : (on?LOW:HIGH)));
-}
+inline void ledWrite(int pin, bool on){ digitalWrite(pin, (on?HIGH:LOW)); }
 
-void setLeds(bool izq, bool der, bool stop){
-  ledWrite(LED_IZQ,  izq);
-  ledWrite(LED_DER,  der);
-  ledWrite(LED_STOP, stop);
-}
-
+void setLeds(bool izq, bool der, bool stop){ ledWrite(LED_IZQ, izq); ledWrite(LED_DER, der); ledWrite(LED_STOP, stop); }
 inline void setReverseLed(bool on){ ledWrite(LED_REV, on); }
 inline void setBlue(bool on){ ledWrite(LED_AZULES, on); }
-
 inline void figureStart(){ setBlue(true); }
 inline void figureEnd(){ setBlue(false); }
 
@@ -83,7 +43,6 @@ void setDireccion(bool adelanteA, bool adelanteB){
   digitalWrite(IN4, adelanteB ? LOW  : HIGH);
 }
 
-// 🧩 Reemplazo temporal de ledcWrite con analogWrite
 void setVelocidades(int dutyA, int dutyB){
   dutyA = clampDuty(dutyA);
   dutyB = clampDuty(dutyB);
@@ -100,39 +59,10 @@ void parar(){
   activeMotionUntil = 0;
 }
 
-void adelante(int vel){
-  setDireccion(true,true);
-  setVelocidades(vel, vel);
-  setLeds(false, false, false);
-  if(lastMotion!='B') setReverseLed(false);
-  lastMotion = 'A';
-}
-
-void atras(int vel){
-  setDireccion(false,false);
-  setVelocidades(vel, vel);
-  setLeds(true, true, false);
-  revBlinkState = true;
-  setReverseLed(true);
-  revLastToggle = millis();
-  lastMotion = 'B';
-}
-
-void izquierda(int vel){
-  setDireccion(true,true);
-  setVelocidades(vel/2, vel);
-  setLeds(true, false, false);
-  if(lastMotion!='B') setReverseLed(false);
-  lastMotion = 'I';
-}
-
-void derecha(int vel){
-  setDireccion(true,true);
-  setVelocidades(vel, vel/2);
-  setLeds(false, true, false);
-  if(lastMotion!='B') setReverseLed(false);
-  lastMotion = 'D';
-}
+void adelante(int vel){ setDireccion(true,true); setVelocidades(vel, vel); setLeds(false,false,false); if(lastMotion!='B') setReverseLed(false); lastMotion='A'; }
+void atras(int vel){ setDireccion(false,false); setVelocidades(vel, vel); setLeds(true,true,false); revBlinkState=true; setReverseLed(true); revLastToggle=millis(); lastMotion='B'; }
+void izquierda(int vel){ setDireccion(true,true); setVelocidades(vel/2, vel); setLeds(true,false,false); if(lastMotion!='B') setReverseLed(false); lastMotion='I'; }
+void derecha(int vel){ setDireccion(true,true); setVelocidades(vel, vel/2); setLeds(false,true,false); if(lastMotion!='B') setReverseLed(false); lastMotion='D'; }
 
 void spinRight(int vel){
   digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
@@ -140,26 +70,6 @@ void spinRight(int vel){
   setVelocidades(vel, vel);
   setLeds(false, true, false);
   delay(600);
-  parar();
-}
-
-void zigzag(int vel, int seg_ms, int rep){
-  figureStart();
-  for(int k=0;k<rep;k++){
-    izquierda(vel); delay(seg_ms);
-    derecha(vel);   delay(seg_ms);
-  }
-  figureEnd();
-  parar();
-}
-
-void squarePath(int vel, int lado_ms){
-  figureStart();
-  for(int i=0;i<4;i++){
-    adelante(vel); delay(lado_ms);
-    spinRight(PWM_MAX);
-  }
-  figureEnd();
   parar();
 }
 
@@ -182,16 +92,16 @@ void updateReverseBlink(){
       revBlinkState = !revBlinkState;
       setReverseLed(revBlinkState);
     }
-  }else{
+  } else {
     if(revBlinkState){ revBlinkState = false; }
     setReverseLed(false);
   }
 }
 
-// ========= MQTT =========
+// ===== MQTT helpers =====
 void ensureMqtt() {
   if (mqtt.connected()) return;
-  for (int i=0; i<3 && !mqtt.connected(); ++i) {
+  for (int i=0;i<3 && !mqtt.connected(); ++i){
     mqtt.connect(MQTT_CLIENT_ID);
     delay(250);
   }
@@ -207,12 +117,50 @@ void publishMoveToMqtt(const String& dir, int speed, uint32_t durationMs, const 
   payload += "\"client_ip\":\"" + clientIp + "\",";
   payload += "\"esp32_ip\":\"" + WiFi.localIP().toString() + "\"";
   payload += "}";
-  mqtt.publish(MQTT_TOPIC, payload.c_str());
+  mqtt.publish(MQTT_TOPIC_MOVE, payload.c_str());
 }
 
-// ========= HTTP HANDLERS =========
+// ===== HC-SR04 reading (simulator OR physical) =====
+// Function signature: no arguments, returns float (distance in cm). If sensor
+// not available returns -1.
+float readUltrasonic(){
+#if USE_HCSR04 == 0
+  // Simulator: produce a plausible distance between 5.0 cm and 300.0 cm
+  long r = random(500, 30001); // 500 -> 30000 (0.5 m .. 300.00 m hundredths)
+  float d = r / 100.0;
+  return d;
+#else
+  // Physical sensor implementation. Ensure ECHO is protected with a
+  // voltage divider (5V -> 3.3V) before connecting to ESP32.
+  digitalWrite(HCSR04_TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(HCSR04_TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(HCSR04_TRIG_PIN, LOW);
+  unsigned long duration = pulseIn(HCSR04_ECHO_PIN, HIGH, 30000UL); // timeout 30ms
+  if(duration == 0) return -1.0; // no echo / out of range
+  float distance_cm = (duration * 0.0343) / 2.0; // speed of sound
+  if(distance_cm > HCSR04_MAX_CM) return -1.0;
+  return distance_cm;
+#endif
+}
+
+void publishDistanceToMqtt(float d){
+  ensureMqtt();
+  if(!mqtt.connected()) return;
+  String payload = "{";
+  if(d < 0){
+    payload += "\"distance_cm\":null,";
+  } else {
+    payload += "\"distance_cm\":" + String(d, 2) + ",";
+  }
+  payload += "\"esp32_ip\":\"" + WiFi.localIP().toString() + "\"";
+  payload += "}";
+  mqtt.publish(MQTT_TOPIC_SENSOR, payload.c_str());
+}
+
+// ===== HTTP handlers (same as before) =====
 void handleStatus() {
-  // remaining ms
   long remaining = 0;
   if (activeMotionUntil > 0) {
     long now = (long)millis();
@@ -231,51 +179,23 @@ void handleStatus() {
 }
 
 void handleMove() {
-  // Parámetros: dir = A|B|I|D|S, speed (0..1023), duration_ms (1..5000)
-  if (!server.hasArg("dir")) {
-    server.send(400, "application/json", "{\"error\":\"Parametro 'dir' requerido (A|B|I|D|S)\"}");
-    return;
-  }
-
-  String dir = server.arg("dir");
-  dir.toUpperCase();
-
+  if (!server.hasArg("dir")) { server.send(400, "application/json", "{\"error\":\"Parametro 'dir' requerido (A|B|I|D|S)\"}"); return; }
+  String dir = server.arg("dir"); dir.toUpperCase();
   int speed = velDefault;
-  if (server.hasArg("speed")) {
-    speed = clampDuty(server.arg("speed").toInt());
-  }
-
-  uint32_t durationMs = 1000; // por defecto 1s
-  if (server.hasArg("duration_ms")) {
-    durationMs = (uint32_t) server.arg("duration_ms").toInt();
-  }
+  if (server.hasArg("speed")) speed = clampDuty(server.arg("speed").toInt());
+  uint32_t durationMs = 1000;
+  if (server.hasArg("duration_ms")) durationMs = (uint32_t) server.arg("duration_ms").toInt();
   if (durationMs == 0) durationMs = 1;
-  if (durationMs > 5000) durationMs = 5000; // límite de seguridad
-
-  // Ejecutar movimiento
+  if (durationMs > 5000) durationMs = 5000;
   if      (dir == "A") adelante(speed);
   else if (dir == "B") atras(speed);
   else if (dir == "I") izquierda(speed);
   else if (dir == "D") derecha(speed);
   else if (dir == "S") parar();
-  else {
-    server.send(400, "application/json", "{\"error\":\"dir invalido. Use A|B|I|D|S\"}");
-    return;
-  }
-  // Programar autostop (si no es S)
-  if (dir != "S") {
-    activeMotionUntil = millis() + durationMs;
-  } else {
-    activeMotionUntil = 0;
-  }
-
-  // IP del cliente
+  else { server.send(400, "application/json", "{\"error\":\"dir invalido. Use A|B|I|D|S\"}"); return; }
+  if (dir != "S") activeMotionUntil = millis() + durationMs; else activeMotionUntil = 0;
   String clientIp = server.client().remoteIP().toString();
-
-  // Publicar en MQTT
   publishMoveToMqtt(dir, speed, durationMs, clientIp);
-
-  // Respuesta
   String json = "{";
   json += "\"ok\":true,";
   json += "\"dir\":\"" + dir + "\",";
@@ -286,14 +206,12 @@ void handleMove() {
   server.send(200, "application/json", json);
 }
 
-// ========= WIFI =========
-void connectWiFi() {
+// ===== WIFI =====
+void connectWiFi(){
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   unsigned long start = millis();
-  while (WiFi.status() != WL_CONNECTED && millis()-start < 20000) {
-    delay(250);
-  }
+  while (WiFi.status() != WL_CONNECTED && millis()-start < 20000) { delay(250); }
 }
 
 void setup(){
@@ -307,15 +225,14 @@ void setup(){
   pinMode(LED_REV, OUTPUT);
   pinMode(LED_AZULES, OUTPUT);
 
+#if USE_HCSR04 == 1
+  pinMode(HCSR04_TRIG_PIN, OUTPUT);
+  pinMode(HCSR04_ECHO_PIN, INPUT);
+#endif
+
   setLeds(false,false,false);
   setReverseLed(false);
   setBlue(false);
-
-  // ❌ PWM desactivado temporalmente
-  // ledcSetup(PWM_CH_A, PWM_FREQ_HZ, PWM_RES_BITS);
-  // ledcSetup(PWM_CH_B, PWM_FREQ_HZ, PWM_RES_BITS);
-  // ledcAttachPin(ENA, PWM_CH_A);
-  // ledcAttachPin(ENB, PWM_CH_B);
   setVelocidades(0,0);
 
   connectWiFi();
@@ -323,10 +240,6 @@ void setup(){
 
   mqtt.setServer(MQTT_BROKER, MQTT_PORT);
 
-  // MQTT
-  mqtt.setServer(MQTT_BROKER, MQTT_PORT);
-
-  // HTTP server
   server.on("/status", HTTP_GET, handleStatus);
   server.on("/move",   HTTP_POST, handleMove);
   server.on("/health", HTTP_GET, [](){ server.send(200, "application/json", "{\"status\":\"ok\"}"); });
@@ -334,15 +247,20 @@ void setup(){
   server.begin();
 
   parar();
-
+  randomSeed(micros());
 }
 
 void loop(){
   server.handleClient();
   mqtt.loop();
 
-  if (activeMotionUntil > 0 && millis() >= activeMotionUntil) {
-    parar();
-  }
+  if (activeMotionUntil > 0 && millis() >= activeMotionUntil) { parar(); }
   updateReverseBlink();
+
+  unsigned long now = millis();
+  if (now - lastSensorPublish >= SENSOR_PUBLISH_INTERVAL_MS) {
+    lastSensorPublish = now;
+    float d = readUltrasonic();
+    publishDistanceToMqtt(d);
+  }
 }
