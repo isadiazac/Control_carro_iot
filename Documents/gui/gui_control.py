@@ -1,5 +1,4 @@
-import tkinter as tk
-from tkinter import ttk
+import customtkinter as ctk
 import threading
 import requests
 import json
@@ -12,12 +11,11 @@ ESP32_BASE_URL = "http://192.168.1.123"  # Cambiar por IP real del ESP32
 API_MOVE = "/api/v1/move"
 API_HEALTH = "/api/v1/healthcheck"
 
-MQTT_BROKER = "10.238.12.138"  # Cambiar por IP del broker
-MQTT_PORT = 1883               # 8883 si usas TLS
+MQTT_BROKER = "192.168.84.252"  
+MQTT_PORT = 8883              
 MQTT_TOPIC_DISTANCE = "esp32car/distance"
 
 current_distance = "—"
-
 
 # ==========================================
 # FUNCIONES HTTP
@@ -35,15 +33,13 @@ def move_car(direction):
     except Exception as e:
         print("Error al mover:", e)
 
-
 def get_health():
     try:
         url = ESP32_BASE_URL + API_HEALTH
         r = requests.get(url, timeout=2)
         return r.json().get("status", "desconocido")
-    except Exception as e:
+    except Exception:
         return "error"
-
 
 # ==========================================
 # MQTT CALLBACKS
@@ -60,64 +56,77 @@ def on_message(client, userdata, msg):
     except:
         current_distance = "error"
 
-
 def mqtt_loop():
     client = mqtt.Client()
     client.on_message = on_message
+
+    # Si tu broker usa TLS, activa esta línea:
+    client.tls_set()  
+    client.tls_insecure_set(True)
+
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
     client.subscribe(MQTT_TOPIC_DISTANCE)
     client.loop_forever()
 
-
 # ==========================================
-# GUI
+# GUI (CUSTOMTKINTER)
 # ==========================================
 def start_gui():
-    root = tk.Tk()
-    root.title("Control del Carro IoT")
-    root.geometry("300x350")
+    ctk.set_appearance_mode("light")
+    ctk.set_default_color_theme("blue")
 
-    # Estado del ESP32
-    lbl_status = ttk.Label(root, text="Estado ESP32: —")
-    lbl_status.pack(pady=5)
+    root = ctk.CTk()
+    root.title("Control del Carro IoT")
+    root.geometry("350x420")
+
+    # Estado ESP32
+    lbl_status = ctk.CTkLabel(root, text="Estado ESP32: —", font=("Segoe UI", 14))
+    lbl_status.pack(pady=10)
 
     def update_status():
         status = get_health()
-        lbl_status.config(text=f"Estado ESP32: {status}")
+        lbl_status.configure(text=f"Estado ESP32: {status}")
         root.after(4000, update_status)
 
     # Distancia desde MQTT
-    lbl_distance = ttk.Label(root, text="Distancia: —", font=("Arial", 16))
-    lbl_distance.pack(pady=15)
+    lbl_distance = ctk.CTkLabel(root, text="Distancia: —",
+                                font=("Segoe UI", 28, "bold"))
+    lbl_distance.pack(pady=20)
 
     def update_distance():
-        lbl_distance.config(text=f"Distancia: {current_distance}")
+        lbl_distance.configure(text=f"Distancia: {current_distance}")
         root.after(300, update_distance)
 
-    # Botonera de control
-    frame = tk.Frame(root)
-    frame.pack()
+    # Contenedor de botones
+    frame = ctk.CTkFrame(root)
+    frame.pack(pady=15)
 
-    ttk.Button(frame, text="↑", width=6,
-               command=lambda: move_car("A")).grid(row=0, column=1, pady=5)
+    btn_up = ctk.CTkButton(frame, text="↑", width=60, height=45,
+                           command=lambda: move_car("A"))
+    btn_up.grid(row=0, column=1, pady=5)
 
-    ttk.Button(frame, text="←", width=6,
-               command=lambda: move_car("I")).grid(row=1, column=0, padx=5)
+    btn_left = ctk.CTkButton(frame, text="←", width=60, height=45,
+                             command=lambda: move_car("I"))
+    btn_left.grid(row=1, column=0, padx=5)
 
-    ttk.Button(frame, text="→", width=6,
-               command=lambda: move_car("D")).grid(row=1, column=2, padx=5)
+    btn_stop = ctk.CTkButton(frame, text="STOP", fg_color="purple",
+                             hover_color="#800080",
+                             width=60, height=45,
+                             command=lambda: move_car("S"))
+    btn_stop.grid(row=1, column=1, padx=5)
 
-    ttk.Button(frame, text="↓", width=6,
-               command=lambda: move_car("B")).grid(row=2, column=1, pady=5)
+    btn_right = ctk.CTkButton(frame, text="→", width=60, height=45,
+                              command=lambda: move_car("D"))
+    btn_right.grid(row=1, column=2, padx=5)
 
-    ttk.Button(frame, text="STOP", width=6,
-               command=lambda: move_car("S")).grid(row=1, column=1, pady=10)
+    btn_down = ctk.CTkButton(frame, text="↓", width=60, height=45,
+                             command=lambda: move_car("B"))
+    btn_down.grid(row=2, column=1, pady=5)
 
     update_status()
     update_distance()
 
     root.mainloop()
-
 
 # ==========================================
 # MAIN
