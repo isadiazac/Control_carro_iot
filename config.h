@@ -2,12 +2,12 @@
 #pragma once
 
 // ====== CONFIG WI-FI ======
-#define WIFI_SSID       "ASULMOVIS"
-#define WIFI_PASS       "Asul23alma"
+#define WIFI_SSID       "Isa"
+#define WIFI_PASS       "12345678"
 
 // ====== CONFIG MQTT ======
-#define MQTT_BROKER     "192.168.1.101"
-#define MQTT_PORT       1883
+#define MQTT_BROKER     "ciber-nexus.loc"
+#define MQTT_PORT       8883
 #define MQTT_CLIENT_ID  "esp32_car"
 #define MQTT_TOPIC_MOVE "esp32car/http"
 #define MQTT_TOPIC_SENSOR "esp32car/distance"

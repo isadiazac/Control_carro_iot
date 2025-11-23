@@ -13,7 +13,7 @@ ESP32_BASE_URL = "http://192.168.1.123"   # IP del ESP32
 API_MOVE = "/api/v1/move"
 API_HEALTH = "/api/v1/healthcheck"
 
-MQTT_BROKER = "172.20.10.3"            # IP del broker MQTT
+MQTT_BROKER = "ciber-nexus.loc"            # IP del broker MQTT
 MQTT_PORT = 8883                          # Puerto seguro (TLS)
 MQTT_TOPIC_DISTANCE = "esp32car/distance"
 

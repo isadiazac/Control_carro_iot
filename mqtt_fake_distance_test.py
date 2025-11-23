@@ -2,7 +2,7 @@ import time
 import json
 import paho.mqtt.client as mqtt
 
-BROKER = "172.20.10.3"   # cambia si tu broker tiene otra IP
+BROKER = "ciber-nexus.loc"   # cambia si tu broker tiene otra IP
 PORT = 8883                 # igual que en tu GUI
 TOPIC = "esp32car/distance"
 
