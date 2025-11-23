@@ -277,6 +277,14 @@ void setup(){
   server.on("/status", HTTP_GET, handleStatus);
   server.on("/move",   HTTP_POST, handleMove);
   server.on("/health", HTTP_GET, [](){ server.send(200, "application/json", "{\"status\":\"ok\"}"); });
+// Alias del healthcheck
+  server.on("/api/v1/healthcheck", HTTP_GET, [](){
+  server.send(200, "application/json", "{\"status\":\"ok\",\"version\":\"v1\"}");
+  });
+  // GET /api/v1/move (solo para probar sin Postman o app)
+  server.on("/api/v1/move", HTTP_GET, handleMove);
+  // POST /api/v1/move (el oficial pedido por el profe)
+  server.on("/api/v1/move", HTTP_POST, handleMove);
   server.onNotFound([](){ server.send(404, "application/json", "{\"error\":\"Not found\"}"); });
   server.begin();
 
