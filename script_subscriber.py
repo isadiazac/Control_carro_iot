@@ -2,7 +2,7 @@ import paho.mqtt.client as mqtt
 import ssl
 import json
 
-BROKER = "10.238.12.138"
+BROKER = "172.20.10.3"
 PORT = 8883
 TOPIC = "esp32car/distance"
 CA_PATH = "C:/Users/isadi/OneDrive/Documentos/2025-2/Infra/certificado_dominio_local.crt" 
