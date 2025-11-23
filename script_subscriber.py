@@ -30,3 +30,4 @@ client.tls_insecure_set(False)  # True = no validar CN; False = validar
 
 client.connect(BROKER, PORT, 60)
 client.loop_forever()
+

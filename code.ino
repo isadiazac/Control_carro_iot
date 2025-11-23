@@ -1,14 +1,50 @@
 // ====== esp32_car.ino ======
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>   // <--- TLS
 #include <WebServer.h>
 #include <PubSubClient.h>
 #include "config.h"
 
+// ========= TLS: Pega aquí tu CA =========
+const char ca_cert[] PROGMEM = R"EOF(
+-----BEGIN CERTIFICATE-----
+MIIEdzCCAl+gAwIBAgIIOVtj6TJT8RgwDQYJKoZIhvcNAQELBQAwRDELMAkGA1UE
+BhMCQ08xFDASBgNVBAoTC0NpYmVyLU5leHVzMR8wHQYDVQQDExZDQSBJbnRlcm5h
+IENpYmVyLU5leHVzMB4XDTI1MTAwMzIwMTIwMFoXDTI2MDkxOTEwMDgwMFowPjEL
+MAkGA1UEBhMCQ08xFDASBgNVBAoTC0NpYmVyLU5leHVzMRkwFwYDVQQDDBAqY2li
+ZXItbmV4dXMubG9jMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwUQ8
+xJy0RO+jaPTkuwMoQU8HuMPR8tWLpVWr5M1wxEaAds4TxvF9/yZ7qb4Zr8ZTUQjL
+oRAyMX/GtJskWiFS+HX9/xqTI/mv3gVEUcN/NoaqFG1Bi9sGFGuC5Zfsg1u7O9qC
+nP24UV/YKXqnaW6YdUK6Kzmkp8vQn3YG/zFNninvcwoWyZww4lhuTLCux8yalPBD
+ME+bGQEc03+RxhF1GoAcImlEsjqAvBdpJQFDbQxnH3Hw8T7iHEjFXnQ40mV9hOWs
+3FKMlbNHLhawyI3JObeXV/rcc1HoTrzKVr6Bx/rSnnVlhiKPTZrimZ0gl9/2T5BB
++K/lwy2m6JfWnKUoewIDAQABo3MwcTALBgNVHQ8EBAMCBaAwEwYDVR0lBAwwCgYI
+KwYBBQUHAwEwLQYDVR0RBCYwJIIRKi5jaWJlci1uZXh1cy5sb2OCD2NpYmVyLW5l
+eHVzLmxvYzAeBglghkgBhvhCAQ0EERYPeGNhIGNlcnRpZmljYXRlMA0GCSqGSIb3
+DQEBCwUAA4ICAQAPMYUzWJZ0apl94FxXOvi6Np+2p2luZM9Gv0/YNDFTysaifc24
+sz6wisvbH1D93sYGKyZ59fxT+w0QiiqG3RB2sG5BbBkTgeSambUAZvqNpTr0eteU
+3hqh5Mwh62+wKknWJ9QQluWz8w2mPxw0kVb6HggJJQyzBOoJqPzjQKJToDVGCTwe
+5qCj+CHG8Yg8q3p8GKBVU1rwFKgIkMg0hadkEcDRPZrexywuMf+D2IBJZ+uVjsFb
+sFAdzRL5mAYaMLTznuIh4osfeT25VfGmIJpDI9gbyAq412KYmbtnDDGD198M8ZGA
+lDwZ9+AOU+2sZtSVmWYS0ATj5h4j2Y8cgQwOWmV8WhwQOyzy1z2bK4o5XBDIRTWk
+Yr7avoBtDVoY/8YLOaiazrz7pJ95FRkQtcW9ch3sX3YATE1IaEldwAtDzfQIK0fP
+9dC29JhnoZYalnUKQQdlpekTIvlh8NDz8x8RFUNZZwr7ctVRqxB5JLVAUgaXR0ua
+sJIFKQPNH89bnIgi/75geYAlKkeUcgfG9tSMYec7XbxtlF5gA7guFcZU+tPu6vqK
+jKo6U1u/VEXH2HUtoz+oAx1y3H0Teo9yeY+RztrSrgAWD5YsZ3hUDDezKPPX+eN9
+skWx0HpH3CjsMRz7G998H1jjd77vveWf/Rg0LUcIcL1jBzcgigg7erw4FQ==
+-----END CERTIFICATE-----
+)EOF";
+
 // ========= GLOBALS ==========
+
+// ⚠ Cambiado: WiFiClient → WiFiClientSecure
+WiFiClientSecure secureClient;
+
+// PubSubClient usando secureClient (TLS)
+PubSubClient mqtt(secureClient);
+
 WebServer server(80);
-WiFiClient wifiClient;
-PubSubClient mqtt(wifiClient);
 
 // Control
 int velDefault = 800;
@@ -102,7 +138,7 @@ void updateReverseBlink(){
 void ensureMqtt() {
   if (mqtt.connected()) return;
   for (int i=0;i<3 && !mqtt.connected(); ++i){
-    mqtt.connect(MQTT_CLIENT_ID);
+    mqtt.connect(MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD);  // <-- TLS + auth
     delay(250);
   }
 }
@@ -111,7 +147,7 @@ void publishMoveToMqtt(const String& dir, int speed, uint32_t durationMs, const 
   ensureMqtt();
   if (!mqtt.connected()) return;
   String payload = "{";
-  payload += "\"dir\":\"" + dir + "\",";
+  payload += "\"dir\":\"" + dir + "\","; 
   payload += "\"speed\":" + String(speed) + ",";
   payload += "\"duration_ms\":" + String(durationMs) + ",";
   payload += "\"client_ip\":\"" + clientIp + "\",";
@@ -120,26 +156,21 @@ void publishMoveToMqtt(const String& dir, int speed, uint32_t durationMs, const 
   mqtt.publish(MQTT_TOPIC_MOVE, payload.c_str());
 }
 
-// ===== HC-SR04 reading (simulator OR physical) =====
-// Function signature: no arguments, returns float (distance in cm). If sensor
-// not available returns -1.
+// ===== HC-SR04 =====
 float readUltrasonic(){
 #if USE_HCSR04 == 0
-  // Simulator: produce a plausible distance between 5.0 cm and 300.0 cm
-  long r = random(500, 30001); // 500 -> 30000 (0.5 m .. 300.00 m hundredths)
+  long r = random(500, 30001);
   float d = r / 100.0;
   return d;
 #else
-  // Physical sensor implementation. Ensure ECHO is protected with a
-  // voltage divider (5V -> 3.3V) before connecting to ESP32.
   digitalWrite(HCSR04_TRIG_PIN, LOW);
   delayMicroseconds(2);
   digitalWrite(HCSR04_TRIG_PIN, HIGH);
   delayMicroseconds(10);
   digitalWrite(HCSR04_TRIG_PIN, LOW);
-  unsigned long duration = pulseIn(HCSR04_ECHO_PIN, HIGH, 30000UL); // timeout 30ms
-  if(duration == 0) return -1.0; // no echo / out of range
-  float distance_cm = (duration * 0.0343) / 2.0; // speed of sound
+  unsigned long duration = pulseIn(HCSR04_ECHO_PIN, HIGH, 30000UL);
+  if(duration == 0) return -1.0;
+  float distance_cm = (duration * 0.0343) / 2.0;
   if(distance_cm > HCSR04_MAX_CM) return -1.0;
   return distance_cm;
 #endif
@@ -149,17 +180,13 @@ void publishDistanceToMqtt(float d){
   ensureMqtt();
   if(!mqtt.connected()) return;
   String payload = "{";
-  if(d < 0){
-    payload += "\"distance_cm\":null,";
-  } else {
-    payload += "\"distance_cm\":" + String(d, 2) + ",";
-  }
+  payload += (d < 0 ? "\"distance_cm\":null," : "\"distance_cm\":" + String(d,2) + ",");
   payload += "\"esp32_ip\":\"" + WiFi.localIP().toString() + "\"";
   payload += "}";
   mqtt.publish(MQTT_TOPIC_SENSOR, payload.c_str());
 }
 
-// ===== HTTP handlers (same as before) =====
+// ===== HTTP =====
 void handleStatus() {
   long remaining = 0;
   if (activeMotionUntil > 0) {
@@ -187,15 +214,19 @@ void handleMove() {
   if (server.hasArg("duration_ms")) durationMs = (uint32_t) server.arg("duration_ms").toInt();
   if (durationMs == 0) durationMs = 1;
   if (durationMs > 5000) durationMs = 5000;
+
   if      (dir == "A") adelante(speed);
   else if (dir == "B") atras(speed);
   else if (dir == "I") izquierda(speed);
   else if (dir == "D") derecha(speed);
   else if (dir == "S") parar();
   else { server.send(400, "application/json", "{\"error\":\"dir invalido. Use A|B|I|D|S\"}"); return; }
+
   if (dir != "S") activeMotionUntil = millis() + durationMs; else activeMotionUntil = 0;
+
   String clientIp = server.client().remoteIP().toString();
   publishMoveToMqtt(dir, speed, durationMs, clientIp);
+
   String json = "{";
   json += "\"ok\":true,";
   json += "\"dir\":\"" + dir + "\",";
@@ -209,7 +240,7 @@ void handleMove() {
 // ===== WIFI =====
 void connectWiFi(){
   WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  WiFi.begin(WiFi_SSID, WiFi_PASS);
   unsigned long start = millis();
   while (WiFi.status() != WL_CONNECTED && millis()-start < 20000) { delay(250); }
 }
@@ -238,11 +269,22 @@ void setup(){
   connectWiFi();
   Serial.println(WiFi.localIP());
 
+  // ====== TLS: carga CA ======
+  secureClient.setCACert(ca_cert);
+
   mqtt.setServer(MQTT_BROKER, MQTT_PORT);
 
   server.on("/status", HTTP_GET, handleStatus);
   server.on("/move",   HTTP_POST, handleMove);
   server.on("/health", HTTP_GET, [](){ server.send(200, "application/json", "{\"status\":\"ok\"}"); });
+// Alias del healthcheck
+  server.on("/api/v1/healthcheck", HTTP_GET, [](){
+  server.send(200, "application/json", "{\"status\":\"ok\",\"version\":\"v1\"}");
+  });
+  // GET /api/v1/move (solo para probar sin Postman o app)
+  server.on("/api/v1/move", HTTP_GET, handleMove);
+  // POST /api/v1/move (el oficial pedido por el profe)
+  server.on("/api/v1/move", HTTP_POST, handleMove);
   server.onNotFound([](){ server.send(404, "application/json", "{\"error\":\"Not found\"}"); });
   server.begin();
 

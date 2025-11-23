@@ -284,5 +284,52 @@ sequenceDiagram
 
 Para realizar las pruebas HTTP, coloca la IP del ESP32 que aparece en la consola al ejecutar el código.
 
+## 🔐 MQTT Seguro (TLS/SSL) en el ESP32
+
+Esta sección explica cómo se implementó la conexión **MQTT segura (puerto 8883 con TLS/SSL)** en el ESP32, usando un **certificado de Autoridad Certificadora (CA)** para validar la identidad del broker Mosquitto.
+
+---
+
+###  ¿Qué se hizo?
+
+El ESP32 originalmente usaba MQTT sin cifrado (**puerto 1883**).  
+Para proteger la comunicación y evitar ataques MITM, se integró:
+
+- `WiFiClientSecure` en lugar de `WiFiClient`
+- Importación del certificado `ca.crt`
+- Conexión MQTT cifrada usando TLS/SSL
+- Puerto seguro **8883**
+
+Ahora toda la comunicación entre el carro y el broker viaja cifrada y autenticada.
+
+---
+
+###  Cambios principales en el código
+
+####  1. Se añadió el certificado CA dentro del firmware
+
+El archivo `ca.crt` se incrustó en el código usando un bloque RAW:
+
+const char ca_cert[] PROGMEM = R"EOF(
+-----BEGIN CERTIFICATE-----
+( contenido del certificado )
+-----END CERTIFICATE-----
+)EOF";
+
+2. Se reemplazó el cliente no seguro por uno cifrado
+
+Antes:
+
+WiFiClient wifiClient;
+PubSubClient mqtt(wifiClient);
+
+
+Ahora:
+
+WiFiClientSecure secureClient;
+PubSubClient mqtt(secureClient);
+
+
+
 📎 Colección Postman:
 [👉 Enlace directo](https://isadiac06-8447466.postman.co/workspace/Isabela-D%C3%ADaz-Acosta's-Workspace~9e2b66f0-0753-4365-8205-f3c81aec62b1/collection/48860550-8b0edd90-5e8c-4ea3-a6af-769d312878a0?action=share&creator=48860550)
