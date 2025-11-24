@@ -6,11 +6,18 @@
 #define WIFI_PASS       "12345678"
 
 // ====== CONFIG MQTT ======
-#define MQTT_BROKER     "ciber-nexus.loc"
-#define MQTT_PORT       8883
-#define MQTT_CLIENT_ID  "esp32_car"
-#define MQTT_TOPIC_MOVE "esp32car/http"
-#define MQTT_TOPIC_SENSOR "esp32car/distance"
+// Dominio con el que funciona tu certificado TLS
+#define MQTT_BROKER       "172.20.10.3"
+#define MQTT_PORT         8883
+#define MQTT_CLIENT_ID    "esp32_car"
+
+// Si NO usas autenticación MQTT, déjalos vacíos
+#define MQTT_USERNAME     ""
+#define MQTT_PASSWORD     ""
+
+// Temas MQTT
+#define MQTT_TOPIC_MOVE     "esp32car/http"
+#define MQTT_TOPIC_SENSOR   "esp32car/distance"
 
 // ====== PINES MOTORES ======
 #define ENA 25
@@ -28,18 +35,10 @@
 #define LED_AZULES 21
 
 // ====== HC-SR04 CONFIG ======
-// WARNING: The HC-SR04 ECHO pin outputs 5V. If you connect ECHO directly to an
-// ESP32 input you'll likely damage the chip. Use a voltage divider or level
-// shifter on ECHO (e.g. 2 resistors to bring 5V -> 3.3V) or keep the sensor
-// disabled and use the simulator. Consult your professor if unsure.
-
-// Set USE_HCSR04 to 1 to use a physical sensor. Default is 0 (simulator).
-#define USE_HCSR04 0
-
-// Only used if USE_HCSR04 == 1
+#define USE_HCSR04 1
 #define HCSR04_TRIG_PIN  4
 #define HCSR04_ECHO_PIN  5
-#define HCSR04_MAX_CM    400   // max measurable distance by sensor
+#define HCSR04_MAX_CM    400
 
 // ====== SENSOR PUBLISH ======
 #define SENSOR_PUBLISH_INTERVAL_MS 2000
@@ -51,5 +50,3 @@
 
 // ====== OTHER ======
 #define REV_BLINK_MS 250
-
-// End of config.h

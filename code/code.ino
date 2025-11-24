@@ -141,11 +141,25 @@ void updateReverseBlink(){
 // ===== MQTT helpers =====
 void ensureMqtt() {
   if (mqtt.connected()) return;
-  for (int i=0;i<3 && !mqtt.connected(); ++i){
-    mqtt.connect(MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD);  // <-- TLS + auth
-    delay(250);
+
+  Serial.println("[MQTT] Intentando conectar al broker...");
+
+  for (int i = 0; i < 3 && !mqtt.connected(); i++) {
+    bool ok = mqtt.connect(MQTT_CLIENT_ID);
+    Serial.print("  Intento ");
+    Serial.print(i + 1);
+    Serial.print(": ");
+    Serial.println(ok ? " Conectado" : "Falló");
+    delay(300);
+  }
+
+  if (!mqtt.connected()) {
+    Serial.println("[MQTT] No se pudo conectar al broker");
+  } else {
+    Serial.println("[MQTT] Conexión MQTT exitosa");
   }
 }
+
 
 void publishMoveToMqtt(const String& dir, int speed, uint32_t durationMs, const String& clientIp) {
   ensureMqtt();
@@ -167,6 +181,7 @@ float readUltrasonic(){
   float d = r / 100.0;
   return d;
 #else
+  delayMicroseconds(60);
   digitalWrite(HCSR04_TRIG_PIN, LOW);
   delayMicroseconds(2);
   digitalWrite(HCSR04_TRIG_PIN, HIGH);
@@ -244,7 +259,7 @@ void handleMove() {
 // ===== WIFI =====
 void connectWiFi(){
   WiFi.mode(WIFI_STA);
-  WiFi.begin(WiFi_SSID, WiFi_PASS);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
   unsigned long start = millis();
   while (WiFi.status() != WL_CONNECTED && millis()-start < 20000) { delay(250); }
 }
@@ -274,7 +289,9 @@ void setup(){
   Serial.println(WiFi.localIP());
 
   // ====== TLS: carga CA ======
-  secureClient.setCACert(ca_cert);
+  //secureClient.setCACert(ca_cert);
+  secureClient.setInsecure();
+
 
   mqtt.setServer(MQTT_BROKER, MQTT_PORT);
 

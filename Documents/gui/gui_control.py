@@ -9,7 +9,7 @@ import tkinter as tk  # solo para el Canvas del radar
 # ==========================================
 # CONFIGURACIÓN (CAMBIA ESTO SI HACE FALTA)
 # ==========================================
-ESP32_BASE_URL = "http://192.168.1.123"   # IP del ESP32
+ESP32_BASE_URL = "http://172.20.10.2"   # IP del ESP32
 API_MOVE = "/api/v1/move"
 API_HEALTH = "/api/v1/healthcheck"
 
@@ -21,11 +21,11 @@ MQTT_TOPIC_DISTANCE = "esp32car/distance"
 current_distance_text = "—"
 current_distance_value = None     # en cm (float o None)
 
-MAX_RADAR_DISTANCE_CM = 100.0     # rango máximo que quieres dibujar (ajustable)
+MAX_RADAR_DISTANCE_CM = 50.0     # rango máximo que quieres dibujar (ajustable)
 
-# ==========================================
+
 # FUNCIONES HTTP
-# ==========================================
+
 def move_car(direction: str):
     """Envía un comando de movimiento al ESP32 usando la API REST."""
     params = {
@@ -51,9 +51,8 @@ def get_health() -> str:
         return "error"
 
 
-# ==========================================
 # MQTT CALLBACKS
-# ==========================================
+
 def on_message(client, userdata, msg):
     """Callback para mensajes MQTT: actualiza la distancia global."""
     global current_distance_text, current_distance_value
@@ -86,10 +85,7 @@ def mqtt_loop():
     client.subscribe(MQTT_TOPIC_DISTANCE)
     client.loop_forever()
 
-
-# ==========================================
 # GUI (CUSTOMTKINTER + RADAR 2D)
-# ==========================================
 class CarDashboard(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -208,9 +204,8 @@ class CarDashboard(ctk.CTk):
         cw = self.radar_width
         ch = self.radar_height
 
-        # Fondo ya es oscuro, ahora dibujamos arcos verdes
         center_x = cw / 2
-        center_y = ch   # origen en la parte de abajo
+        center_y = ch   
 
         # Líneas guía (triángulo de apertura)
         self.radar_canvas.create_line(
@@ -286,10 +281,7 @@ class CarDashboard(ctk.CTk):
         self._draw_radar_obstacle(current_distance_value)
         self.after(200, self._update_distance_and_radar)
 
-
-# ==========================================
 # MAIN
-# ==========================================
 if __name__ == "__main__":
     # Hilo para MQTT (no bloquea la GUI)
     t = threading.Thread(target=mqtt_loop, daemon=True)

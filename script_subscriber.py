@@ -4,19 +4,19 @@ import json
 
 BROKER = "ciber-nexus.loc"
 PORT = 8883
-TOPIC = "esp32car/distance"
-CA_PATH = "C:/Users/isadi/OneDrive/Documentos/2025-2/Infra/certificado_dominio_local.crt" 
+TOPIC = "esp32car/#"
 
 def on_connect(client, userdata, flags, rc):
-    print("Connected rc=", rc)
+    print("Conectado rc =", rc)
     client.subscribe(TOPIC)
+    print("Suscrito a:", TOPIC)
 
 def on_message(client, userdata, msg):
     try:
         data = json.loads(msg.payload.decode())
         d = data.get("distance_cm")
         ip = data.get("esp32_ip")
-        print(f"ESP32 {ip} -> Distancia: {d}")
+        print(f"➡ ESP32 {ip} → Distancia: {d} cm")
     except Exception as e:
         print("Error:", e)
 
@@ -24,10 +24,20 @@ client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
 
-# Forzar TLS con el CA local
-client.tls_set(ca_certs=CA_PATH, tls_version=ssl.PROTOCOL_TLSv1_2)
-client.tls_insecure_set(False)  # True = no validar CN; False = validar
+# SELF-SIGNED, así que NO usamos CA_CERTS 
+client.tls_set(
+    ca_certs=None,
+    certfile=None,
+    keyfile=None,
+    tls_version=ssl.PROTOCOL_TLSv1_2
+)
+
+# Permitir CN self-signed 
+client.tls_insecure_set(True)
+
+print("TLS configurado (modo permisivo para self-signed)")
 
 client.connect(BROKER, PORT, 60)
-client.loop_forever()
 
+print("Esperando mensajes...")
+client.loop_forever()
