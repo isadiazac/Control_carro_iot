@@ -73,6 +73,33 @@ En este sistema, el **ESP32**:
 5. Los suscriptores (scripts o dashboards) reciben las actualizaciones en tiempo real.
 
 ---
+## Librerías
+- Interfaz Gráfica
+```cpp
+import math
+import json
+import threading
+import requests
+import paho.mqtt.client as mqtt
+import customtkinter as ctk
+import tkinter as tk
+```
+- Cliente
+```cpp
+import paho.mqtt.client as mqtt
+import ssl
+import json
+```
+- ESP-32
+```cpp
+#include <Arduino.h>
+#include <WiFi.h>
+#include <WiFiClientSecure.h>  
+#include <WebServer.h>
+#include <PubSubClient.h>
+#include "config.h"
+```
+---
 
 ## CONFIGURACIÓN INICIAL
 
