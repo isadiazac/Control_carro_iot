@@ -384,25 +384,105 @@ El uso de RAM es bastante bajo (solo un 14%), lo cual garantiza un funcionamient
 
 MQTT 
 **¿Cómo funciona?**
-Telemetría de distancia
-- Tópico:
-```json
+
+# **1. Telemetría de distancia (sensor / simulada)**
+
+*Tópico:*
+
+```
 esp32car/distance
 ```
-Cada dos segundos:
-```json
-float d = readUltrasonic();
-publishDistanceToMqtt(d);
-```
+
+*Payload JSON enviado cada 2 segundos:*
 
 ```json
 {
-  "distance_cm": 87.55,
+  "distance_cm": 151.25,
   "esp32_ip": "172.20.10.2"
 }
 ```
 
-Telemetría de movimiento
+**Descripción de campos:**
+
+| Campo         | Tipo         | Descripción                                                                                |
+| ------------- | ------------ | ------------------------------------------------------------------------------------------ |
+| `distance_cm` | `float/null` | Distancia medida por el ultrasonido. Si el sensor falla o detecta fuera de rango → `null`. |
+| `esp32_ip`    | `string`     | IP local del ESP32 dentro de la red del hotspot.                                           |
+
+Este mensaje es recibido automáticamente por:
+
+* Tu **script en Python**
+* El **GUI (dashboard)** y actualiza el radar
+* Cualquier otro cliente suscrito a `esp32car/#`
+
+Ejemplo real en consola:
+
+```
+ESP32 172.20.10.2 → Distancia: 32.6 cm
+```
+
+---
+
+# **2. Telemetría de movimiento (cada vez que presionas un botón)**
+
+*Tópico:*
+
+```
+esp32car/http
+```
+
+*Payload JSON cuando presionas un botón del GUI:*
+
+```json
+{
+  "dir": "A",
+  "speed": 800,
+  "duration_ms": 1000,
+  "client_ip": "172.20.10.3",
+  "esp32_ip": "172.20.10.2"
+}
+```
+
+**Descripción:**
+
+| Campo         | Descripción                                                      |
+| ------------- | ---------------------------------------------------------------- |
+| `dir`         | Dirección (A=adelante, B=atrás, I=izquierda, D=derecha, S=stop). |
+| `speed`       | Velocidad PWM aplicada a motores.                                |
+| `duration_ms` | Tiempo de movimiento antes de autostop.                          |
+| `client_ip`   | IP del dispositivo que envió la orden (tu PC con GUI).           |
+| `esp32_ip`    | IP del robot.                                                    |
+
+Ejemplo real visto en el broker:
+
+```
+"dir":"D","speed":800,"duration_ms":1000,"client_ip":"172.20.10.3"
+```
+
+---
+
+# **3. Estado del robot (solo si se pregunta por HTTP)**
+
+Este no es MQTT, pero complementa la telemetría.
+
+*Endpoint:*
+
+```
+/status
+```
+
+Ejemplo:
+
+```json
+{
+  "status": "ok",
+  "lastMotion": "A",
+  "velDefault": 800,
+  "moving": true,
+  "remaining_ms": 250,
+  "esp32_ip": "172.20.10.2"
+}
+```
 
 ## Presentacion 
 
