@@ -134,7 +134,7 @@ const char* MQTT_TOPIC_SENSOR = "esp32car/distance";
 
 ## ENDPOINTS HTTP
 
-### 1. `/health` (GET)
+### 1. `/api/v1/healthcheck` (GET)
 
 Verifica que el servidor HTTP esté activo.
 **Respuesta:**
@@ -143,7 +143,7 @@ Verifica que el servidor HTTP esté activo.
 { "status": "ok" }
 ```
 
-### 2. `/status` (GET)
+### 2. `/api/v1/status` (GET)
 
 Retorna el estado actual del vehículo y su conexión.
 **Ejemplo:**
@@ -159,7 +159,7 @@ Retorna el estado actual del vehículo y su conexión.
 }
 ```
 
-### 3. `/move` (POST)
+### 3. `/api/v1/move` (POST)
 
 Envía una instrucción de movimiento al carro.
 **Parámetros:**
