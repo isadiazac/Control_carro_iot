@@ -382,6 +382,27 @@ Máximo disponible: 327,680 bytes
 
 El uso de RAM es bastante bajo (solo un 14%), lo cual garantiza un funcionamiento estable, dejando espacio para tareas, buffers, sensores y funciones adicionales en tiempo de ejecución.
 
+MQTT 
+**¿Cómo funciona?**
+Telemetría de distancia
+- Tópico:
+```json
+esp32car/distance
+```
+Cada dos segundos:
+```json
+float d = readUltrasonic();
+publishDistanceToMqtt(d);
+```
+
+```json
+{
+  "distance_cm": 87.55,
+  "esp32_ip": "172.20.10.2"
+}
+```
+
+Telemetría de movimiento
 
 ## Presentacion 
 
