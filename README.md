@@ -382,10 +382,10 @@ Máximo disponible: 327,680 bytes
 
 El uso de RAM es bastante bajo (solo un 14%), lo cual garantiza un funcionamiento estable, dejando espacio para tareas, buffers, sensores y funciones adicionales en tiempo de ejecución.
 
-MQTT 
-**¿Cómo funciona?**
+# MQTT 
+## **¿Cómo funciona?**
 
-# **1. Telemetría de distancia (sensor / simulada)**
+### **1. Telemetría de distancia (sensor / simulada)**
 
 *Tópico:*
 
@@ -423,7 +423,7 @@ ESP32 172.20.10.2 → Distancia: 32.6 cm
 
 ---
 
-# **2. Telemetría de movimiento (cada vez que presionas un botón)**
+### **2. Telemetría de movimiento (cada vez que presionas un botón)**
 
 *Tópico:*
 
@@ -461,7 +461,7 @@ Ejemplo real visto en el broker:
 
 ---
 
-# **3. Estado del robot (solo si se pregunta por HTTP)**
+### **3. Estado del robot (solo si se pregunta por HTTP)**
 
 Este no es MQTT, pero complementa la telemetría.
 
