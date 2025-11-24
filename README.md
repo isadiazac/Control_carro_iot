@@ -411,7 +411,7 @@ esp32car/distance
 
 Este mensaje es recibido automáticamente por:
 
-* Tu **script en Python**
+* **script en Python**
 * El **GUI (dashboard)** y actualiza el radar
 * Cualquier otro cliente suscrito a `esp32car/#`
 
@@ -484,7 +484,7 @@ Ejemplo:
 }
 ```
 
-## Presentacion 
+## Presentación 
 
 https://www.canva.com/design/DAG5kSDPjQI/19BIYSjw5aU87w6jjS4K_g/edit?utm_content=DAG5kSDPjQI&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton
 
