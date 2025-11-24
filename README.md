@@ -329,6 +329,32 @@ Ahora:
 WiFiClientSecure secureClient;
 PubSubClient mqtt(secureClient);
 
+## Documentación Memoria
+
+<img width="1280" height="75" alt="image" src="https://github.com/user-attachments/assets/126ef806-b36d-48c6-ae41-30213eaa3de1" />
+
+### Memoria de Programa (Flash)
+
+Uso: 1,043,055 bytes
+
+Porcentaje utilizado: 79%
+
+Máximo disponible: 1,310,720 bytes
+
+Esto indica que el firmware ocupa un 79% del espacio disponible en la Flash del ESP32. Aún queda margen suficiente para agregar funcionalidades adicionales, aunque se recomienda optimizar si el proyecto continúa creciendo.
+
+### Memoria Dinámica (RAM)
+
+Variables globales usadas: 46,056 bytes
+
+Porcentaje utilizado: 14%
+
+Memoria restante: 281,624 bytes
+
+Máximo disponible: 327,680 bytes
+
+El uso de RAM es bastante bajo (solo un 14%), lo cual garantiza un funcionamiento estable, dejando espacio para tareas, buffers, sensores y funciones adicionales en tiempo de ejecución.
+
 
 ## Presentacion 
 
